@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>决策日记 · Decision Journal</title>
+<style>
+/* ========================================
+   CSS Custom Properties & Reset
+   ======================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F1F5F9;
+  --surface: #FFFFFF;
+  --surface-alt: #F8FAFC;
+  --border: #E2E8F0;
+  --border-light: #F1F5F9;
+  --text: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #94A3B8;
+  --primary: #2563EB;
+  --primary-light: #EFF6FF;
+  --primary-dark: #1D4ED8;
+  --success: #10B981;
+  --success-light: #ECFDF5;
+  --warning: #F59E0B;
+  --warning-light: #FFFBEB;
+  --danger: #EF4444;
+  --danger-light: #FEF2F2;
+  --info: #6366F1;
+  --info-light: #EEF2FF;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+  --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.05);
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --transition: 150ms ease;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F172A;
+    --surface: #1E293B;
+    --surface-alt: #1A2332;
+    --border: #334155;
+    --border-light: #1E293B;
+    --text: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --primary-light: #1E3A5F;
+    --success-light: #064E3B;
+    --warning-light: #451A03;
+    --danger-light: #450A0A;
+    --info-light: #1E1B4B;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --shadow: 0 1px 3px rgba(0,0,0,.4);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.4);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,.5);
+  }
+}
+
+html { font-size: 15px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========================================
+   Layout
+   ======================================== */
+.app-container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+/* Nav */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.nav-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; height: 56px; gap: 4px;
+}
+.nav-brand {
+  font-weight: 700; font-size: 1.1rem; color: var(--text);
+  display: flex; align-items: center; gap: 8px; margin-right: 16px;
+  white-space: nowrap;
+}
+.nav-brand .icon { font-size: 1.4rem; }
+.nav-tabs { display: flex; gap: 2px; flex: 1; }
+.nav-tab {
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  font-size: .875rem; font-weight: 500; color: var(--text-secondary);
+  cursor: pointer; transition: all var(--transition);
+  border: none; background: none; font-family: var(--font);
+  white-space: nowrap;
+}
+.nav-tab:hover { background: var(--bg); color: var(--text); }
+.nav-tab.active { background: var(--primary-light); color: var(--primary); }
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--radius-sm);
+  font-size: .875rem; font-weight: 600; cursor: pointer; transition: all var(--transition);
+  border: 1px solid transparent; font-family: var(--font);
+  white-space: nowrap;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { background: var(--bg); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border-color: transparent; }
+.btn-ghost:hover { background: var(--bg); color: var(--text); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { opacity: .9; }
+.btn-sm { padding: 5px 10px; font-size: .8rem; }
+.btn-xs { padding: 3px 8px; font-size: .75rem; border-radius: 4px; }
+.btn-icon { padding: 8px; border-radius: var(--radius-sm); }
+
+/* Main */
+.main { padding: 24px 0 80px; }
+.view { display: none; animation: fadeIn .2s ease; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========================================
+   Dashboard
+   ======================================== */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.stat-card .stat-icon { font-size: 1.5rem; margin-bottom: 8px; }
+.stat-card .stat-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
+.stat-card .stat-label { font-size: .8rem; color: var(--text-secondary); margin-top: 2px; }
+.stat-card.accent-blue .stat-value { color: var(--primary); }
+.stat-card.accent-green .stat-value { color: var(--success); }
+.stat-card.accent-amber .stat-value { color: var(--warning); }
+.stat-card.accent-purple .stat-value { color: var(--info); }
+
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.dash-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.dash-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.dash-card-title { font-weight: 700; font-size: .95rem; }
+
+.empty-state {
+  text-align: center; padding: 48px 24px; color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-state p { margin-bottom: 4px; }
+.empty-state .empty-title { font-weight: 600; color: var(--text-secondary); }
+
+/* Quick list in dashboard */
+.decision-mini-item {
+  padding: 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light); margin-bottom: 8px;
+  cursor: pointer; transition: all var(--transition);
+}
+.decision-mini-item:hover { background: var(--surface-alt); border-color: var(--border); }
+.decision-mini-item .dmi-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.decision-mini-item .dmi-title { font-weight: 600; font-size: .9rem; flex: 1; }
+.decision-mini-item .dmi-meta { font-size: .75rem; color: var(--text-muted); margin-top: 4px; display: flex; gap: 12px; }
+
+/* ========================================
+   Decision List
+   ======================================== */
+.list-toolbar {
+  display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+}
+.list-toolbar .search-box {
+  flex: 1; min-width: 200px;
+  padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); font-size: .875rem; font-family: var(--font);
+  color: var(--text);
+}
+.list-toolbar .search-box::placeholder { color: var(--text-muted); }
+.list-toolbar .search-box:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.list-toolbar select {
+  padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); font-size: .875rem; font-family: var(--font);
+  color: var(--text); cursor: pointer;
+}
+.decision-count { font-size: .8rem; color: var(--text-muted); margin-bottom: 12px; }
+
+.decision-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 10px;
+  box-shadow: var(--shadow-sm); cursor: pointer; transition: all var(--transition);
+}
+.decision-card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
+.decision-card.expanded { border-color: var(--primary); }
+.dc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.dc-title { font-weight: 600; flex: 1; }
+.dc-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px; border-radius: 20px; font-size: .72rem; font-weight: 600;
+}
+.badge-decided { background: var(--primary-light); color: var(--primary); }
+.badge-implemented { background: var(--info-light); color: var(--info); }
+.badge-superseded { background: var(--bg); color: var(--text-muted); }
+.badge-right { background: var(--success-light); color: var(--success); }
+.badge-partial { background: var(--warning-light); color: var(--warning); }
+.badge-wrong { background: var(--danger-light); color: var(--danger); }
+.badge-tbd { background: var(--bg); color: var(--text-muted); }
+.dc-meta { font-size: .78rem; color: var(--text-muted); margin-top: 6px; display: flex; gap: 16px; flex-wrap: wrap; }
+.dc-expanded { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: none; }
+.decision-card.expanded .dc-expanded { display: block; }
+.dc-section { margin-bottom: 14px; }
+.dc-section-label { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin-bottom: 4px; }
+.dc-section-content { font-size: .875rem; color: var(--text-secondary); line-height: 1.6; }
+.dc-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.dc-tag { padding: 2px 8px; background: var(--bg); border-radius: 4px; font-size: .75rem; color: var(--text-secondary); }
+
+/* Review section */
+.review-block {
+  background: var(--success-light); border: 1px solid var(--success);
+  border-radius: var(--radius-sm); padding: 16px; margin-top: 12px;
+}
+.review-block.wrong { background: var(--danger-light); border-color: var(--danger); }
+.review-block.partial { background: var(--warning-light); border-color: var(--warning); }
+.review-block .review-header { font-weight: 700; font-size: .85rem; margin-bottom: 8px; }
+
+/* ========================================
+   Modal / Overlay
+   ======================================== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(15, 23, 42, .5); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 40px 20px; overflow-y: auto;
+  animation: fadeIn .15s ease;
+}
+.modal {
+  background: var(--surface); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); width: 100%; max-width: 680px;
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+}
+.modal-title { font-weight: 700; font-size: 1.1rem; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg); cursor: pointer; font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: all var(--transition);
+}
+.modal-close:hover { background: var(--danger-light); color: var(--danger); }
+.modal-body { padding: 24px; max-height: 60vh; overflow-y: auto; }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+/* Form */
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: block; font-size: .82rem; font-weight: 700; color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+.form-label .required { color: var(--danger); margin-left: 2px; }
+.form-input, .form-textarea, .form-select {
+  width: 100%; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: .875rem; font-family: var(--font);
+  background: var(--surface); color: var(--text); transition: border-color var(--transition);
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light);
+}
+.form-textarea { resize: vertical; min-height: 72px; }
+.form-hint { font-size: .75rem; color: var(--text-muted); margin-top: 3px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* Confidence slider */
+.confidence-wrap { display: flex; align-items: center; gap: 16px; }
+.confidence-slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 8px; border-radius: 4px; background: linear-gradient(to right, var(--danger), var(--warning), var(--success));
+  outline: none;
+}
+.confidence-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--surface); border: 3px solid var(--primary); cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.confidence-value {
+  font-size: 1.5rem; font-weight: 700; min-width: 48px; text-align: center;
+}
+/* Dynamic list items */
+.dynamic-list { display: flex; flex-direction: column; gap: 6px; }
+.dynamic-list-item { display: flex; gap: 6px; align-items: center; }
+.dynamic-list-item input { flex: 1; }
+.dynamic-list-item .btn-icon-remove {
+  width: 28px; height: 28px; border-radius: 50%; border: none;
+  background: var(--danger-light); color: var(--danger); cursor: pointer;
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.dynamic-list-item .btn-icon-remove:hover { background: var(--danger); color: #fff; }
+.btn-add-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px; border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  background: transparent; color: var(--text-secondary); cursor: pointer;
+  font-size: .8rem; font-family: var(--font); transition: all var(--transition);
+}
+.btn-add-item:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ========================================
+   Analytics
+   ======================================== */
+.analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.analytics-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm);
+}
+.analytics-card.full-width { grid-column: 1 / -1; }
+.analytics-card-title { font-weight: 700; font-size: .9rem; margin-bottom: 16px; }
+.chart-container { width: 100%; }
+/* Simple bar chart */
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.bar-label { font-size: .8rem; color: var(--text-secondary); min-width: 80px; text-align: right; }
+.bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; display: flex; align-items: center; padding-left: 8px; }
+.bar-fill-text { font-size: .72rem; font-weight: 700; color: #fff; }
+/* Calibration table */
+.calib-table { width: 100%; font-size: .82rem; border-collapse: collapse; }
+.calib-table th { text-align: left; font-size: .72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; padding: 8px; border-bottom: 1px solid var(--border); }
+.calib-table td { padding: 8px; border-bottom: 1px solid var(--border-light); }
+.calib-table .bar-mini { width: 100%; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.calib-table .bar-mini-fill { height: 100%; border-radius: 3px; }
+/* Bias list */
+.bias-tag { display: inline-block; padding: 4px 10px; background: var(--info-light); color: var(--info); border-radius: 20px; font-size: .75rem; font-weight: 600; margin: 2px 4px; }
+
+/* ========================================
+   Toast
+   ======================================== */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 18px; box-shadow: var(--shadow-lg); font-size: .85rem; font-weight: 600;
+  animation: slideIn .2s ease; display: flex; align-items: center; gap: 8px;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error { border-left: 3px solid var(--danger); }
+
+/* ========================================
+   Settings
+   ======================================== */
+.settings-section { margin-bottom: 24px; }
+.settings-title { font-weight: 700; font-size: 1rem; margin-bottom: 12px; }
+.settings-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+}
+.settings-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; }
+.settings-row + .settings-row { border-top: 1px solid var(--border-light); }
+.settings-label { font-weight: 600; font-size: .875rem; }
+.settings-desc { font-size: .78rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ========================================
+   Review Modal
+   ======================================== */
+.review-prediction {
+  background: var(--bg); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;
+  font-size: .85rem;
+}
+
+/* ========================================
+   Empty / Tooltip etc
+   ======================================== */
+.category-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px;
+}
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-muted { color: var(--text-muted); }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid { grid-template-columns: 1fr; }
+  .analytics-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .nav-tab { padding: 8px 10px; font-size: .8rem; }
+  .nav-brand span { display: none; }
+  .modal { max-width: 100%; margin: 0; border-radius: var(--radius) var(--radius) 0 0; }
+  .modal-overlay { padding: 20px 0 0; align-items: flex-end; }
+  .toast-container { left: 16px; right: 16px; bottom: 16px; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { padding: 14px; }
+  .stat-card .stat-value { font-size: 1.5rem; }
+  .decision-card { padding: 14px; }
+  .btn { padding: 8px 12px; font-size: .8rem; }
+  .list-toolbar { flex-direction: column; }
+  .list-toolbar .search-box { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand"><span class="icon">🧠</span><span>决策日记</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-view="dashboard">📊 概览</button>
+      <button class="nav-tab" data-view="decisions">📋 全部决策</button>
+      <button class="nav-tab" data-view="analytics">📈 分析</button>
+      <button class="nav-tab" data-view="settings">⚙️ 设置</button>
+    </div>
+    <div class="nav-actions">
+      <button class="btn btn-primary" onclick="openDecisionForm()" id="btn-new">＋ 新决策</button>
+    </div>
+  </div>
+</div>
+
+<div class="app-container">
+  <div class="main">
+
+    <!-- ============ DASHBOARD VIEW ============ -->
+    <div id="view-dashboard" class="view active">
+      <div class="stats-grid">
+        <div class="stat-card accent-blue">
+          <div class="stat-icon">📝</div><div class="stat-value" id="stat-total">0</div><div class="stat-label">总决策数</div>
+        </div>
+        <div class="stat-card accent-amber">
+          <div class="stat-icon">⏳</div><div class="stat-value" id="stat-pending">0</div><div class="stat-label">待回顾</div>
+        </div>
+        <div class="stat-card accent-green">
+          <div class="stat-icon">✅</div><div class="stat-value" id="stat-accuracy">--</div><div class="stat-label">准确率（已回顾）</div>
+        </div>
+        <div class="stat-card accent-purple">
+          <div class="stat-icon">📅</div><div class="stat-value" id="stat-month">0</div><div class="stat-label">本月决策</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <span class="dash-card-title">⏰ 待回顾</span>
+            <button class="btn btn-xs btn-secondary" onclick="switchView('decisions')">查看全部 →</button>
+          </div>
+          <div id="dash-pending"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-card-header">
+            <span class="dash-card-title">🕐 最近决策</span>
+            <button class="btn btn-xs btn-secondary" onclick="switchView('decisions')">查看全部 →</button>
+          </div>
+          <div id="dash-recent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DECISIONS LIST VIEW ============ -->
+    <div id="view-decisions" class="view">
+      <div class="list-toolbar">
+        <input type="text" class="search-box" placeholder="🔍 搜索决策内容..." id="search-input" oninput="renderDecisions()">
+        <select id="filter-status" onchange="renderDecisions()">
+          <option value="all">全部状态</option>
+          <option value="decided">已决策</option>
+          <option value="implemented">已执行</option>
+          <option value="superseded">已废弃</option>
+        </select>
+        <select id="filter-verdict" onchange="renderDecisions()">
+          <option value="all">全部结论</option>
+          <option value="tbd">待回顾</option>
+          <option value="right">✅ 正确</option>
+          <option value="partial">⚠️ 部分正确</option>
+          <option value="wrong">❌ 错误</option>
+        </select>
+        <select id="filter-category" onchange="renderDecisions()">
+          <option value="all">全部分类</option>
+          <option value="retention">留存</option>
+          <option value="monetization">变现</option>
+          <option value="onboarding">Onboarding</option>
+          <option value="feature">功能</option>
+          <option value="pricing">定价</option>
+          <option value="growth">增长</option>
+          <option value="technical">技术</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <div class="decision-count" id="decision-count"></div>
+      <div id="decisions-list"></div>
+    </div>
+
+    <!-- ============ ANALYTICS VIEW ============ -->
+    <div id="view-analytics" class="view">
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-title">📊 判断结论分布</div>
+          <div class="chart-container" id="chart-verdict"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-title">🎯 置信度校准</div>
+          <div class="chart-container" id="chart-calibration"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-title">🏷️ 各分类准确率</div>
+          <div class="chart-container" id="chart-category"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-title">📅 月度决策量</div>
+          <div class="chart-container" id="chart-monthly"></div>
+        </div>
+        <div class="analytics-card full-width">
+          <div class="analytics-card-title">🔍 常见偏差模式</div>
+          <div class="chart-container" id="chart-biases"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SETTINGS VIEW ============ -->
+    <div id="view-settings" class="view">
+      <div class="settings-section">
+        <div class="settings-title">💾 数据管理</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">导出数据</div>
+              <div class="settings-desc">将所有决策数据导出为 JSON 文件，可用于备份或迁移</div>
+            </div>
+            <button class="btn btn-secondary" onclick="exportData()">📥 导出 JSON</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">导入数据</div>
+              <div class="settings-desc">从之前导出的 JSON 文件恢复数据（会合并，不会覆盖已有数据）</div>
+            </div>
+            <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📤 导入 JSON</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">示例数据</div>
+              <div class="settings-desc">加载示例数据，快速体验完整功能</div>
+            </div>
+            <button class="btn btn-secondary" onclick="loadDemoData()">✨ 加载示例</button>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label" style="color:var(--danger)">清除所有数据</div>
+              <div class="settings-desc">永久删除所有决策记录，此操作不可撤销</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="clearAllData()">🗑 清除全部</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">ℹ️ 关于</div>
+        <div class="settings-card">
+          <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.8">
+            <strong>决策日记</strong> 是一个帮助你积累产品判断力的工具。<br>
+            记录每个决策 → 回顾实际结果 → 发现自己的判断模式 → 校准你的决策直觉。<br><br>
+            数据存储在浏览器本地（localStorage），不会上传到任何服务器。<br>
+            建议每周导出一次数据做备份。
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ MODAL: New/Edit Decision ============ -->
+<div id="modal-form" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-form-title">新决策</span>
+      <button class="modal-close" onclick="closeModal('modal-form')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="form-id">
+      <div class="form-group">
+        <label class="form-label">决策内容 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="form-decision" placeholder="你做了什么决定？一句话说清楚...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">背景 / 约束 <span class="required">*</span></label>
+        <textarea class="form-textarea" id="form-context" placeholder="当时的情况、限制条件、为什么必须现在做决定..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">替代方案</label>
+        <div class="dynamic-list" id="form-alternatives"></div>
+        <button class="btn-add-item" onclick="addDynamicItem('form-alternatives')" style="margin-top:6px">＋ 添加替代方案</button>
+        <div class="form-hint">你认真考虑过但放弃的其他方案</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">选择理由</label>
+        <textarea class="form-textarea" id="form-rationale" placeholder="为什么是这个方案而不是其他？"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">关键假设</label>
+        <div class="dynamic-list" id="form-assumptions"></div>
+        <button class="btn-add-item" onclick="addDynamicItem('form-assumptions')" style="margin-top:6px">＋ 添加假设</button>
+        <div class="form-hint">这个决定成立的前提是什么？哪条最不确定？</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">分类</label>
+          <select class="form-select" id="form-category">
+            <option value="retention">留存</option>
+            <option value="monetization">变现</option>
+            <option value="onboarding">Onboarding</option>
+            <option value="feature">功能</option>
+            <option value="pricing">定价</option>
+            <option value="growth">增长</option>
+            <option value="technical">技术</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">状态</label>
+          <select class="form-select" id="form-status">
+            <option value="decided">已决策</option>
+            <option value="implemented">已执行</option>
+            <option value="superseded">已废弃</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">预期结果 <span class="required">*</span></label>
+        <input type="text" class="form-input" id="form-expected" placeholder="具体、可衡量的预期，如'Day 1 留存从 28% 提升到 35%'">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">置信度（1-10）</label>
+          <div class="confidence-wrap">
+            <span style="font-size:.75rem;color:var(--text-muted)">不确定</span>
+            <input type="range" class="confidence-slider" id="form-confidence" min="1" max="10" value="6" oninput="document.getElementById('confidence-display').textContent = this.value">
+            <span style="font-size:.75rem;color:var(--text-muted)">非常确定</span>
+            <span class="confidence-value" id="confidence-display">6</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">回顾日期</label>
+          <input type="date" class="form-input" id="form-review-date">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-form')">取消</button>
+      <button class="btn btn-primary" onclick="saveDecision()">💾 保存决策</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Review Decision ============ -->
+<div id="modal-review" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🔍 回顾决策</span>
+      <button class="modal-close" onclick="closeModal('modal-review')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="review-id">
+      <div class="review-prediction" id="review-original"></div>
+      <div class="form-group">
+        <label class="form-label">实际结果 <span class="required">*</span></label>
+        <textarea class="form-textarea" id="review-actual" placeholder="数据是什么？实际发生了什么？"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">判断结论 <span class="required">*</span></label>
+        <select class="form-select" id="review-verdict">
+          <option value="right">✅ 正确 — 预期和实际基本一致</option>
+          <option value="partial">⚠️ 部分正确 — 方向对了但幅度/细节有偏差</option>
+          <option value="wrong">❌ 错误 — 判断失误</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">偏差分析</label>
+        <textarea class="form-textarea" id="review-bias" placeholder="如果判断错了，是假设错了、数据看错了、还是执行出了问题？"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">教训 / 可迁移的判断规则</label>
+        <textarea class="form-textarea" id="review-lesson" placeholder="一条可以用于未来决策的判断规则..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-review')">取消</button>
+      <button class="btn btn-primary" onclick="saveReview()">✅ 保存回顾</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+/* ========================================
+   Data Layer
+   ======================================== */
+const STORAGE_KEY = 'decision-journal-data';
+const CATEGORIES = {
+  retention: '留存', monetization: '变现', onboarding: 'Onboarding',
+  feature: '功能', pricing: '定价', growth: '增长',
+  technical: '技术', other: '其他'
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function generateId() {
+  return 'dec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+}
+
+/* ========================================
+   UI State
+   ======================================== */
+let currentView = 'dashboard';
+let expandedCardId = null;
+let editingId = null;
+
+/* ========================================
+   Navigation
+   ======================================== */
+function switchView(viewName) {
+  currentView = viewName;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+  document.querySelector(`.nav-tab[data-view="${viewName}"]`).classList.add('active');
+
+  if (viewName === 'dashboard') renderDashboard();
+  if (viewName === 'decisions') renderDecisions();
+  if (viewName === 'analytics') renderAnalytics();
+}
+
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchView(tab.dataset.view));
+});
+
+/* ========================================
+   Toast
+   ======================================== */
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(20px)';
+    toast.style.transition = 'all .2s ease';
+    setTimeout(() => toast.remove(), 200);
+  }, 2500);
+}
+
+/* ========================================
+   Modal
+   ======================================== */
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+  if (modalId === 'modal-form') editingId = null;
+}
+
+function openDecisionForm(editId = null) {
+  editingId = editId;
+  const modal = document.getElementById('modal-form');
+  document.getElementById('modal-form-title').textContent = editId ? '编辑决策' : '新决策';
+
+  // Reset
+  document.getElementById('form-id').value = '';
+  document.getElementById('form-decision').value = '';
+  document.getElementById('form-context').value = '';
+  document.getElementById('form-rationale').value = '';
+  document.getElementById('form-expected').value = '';
+  document.getElementById('form-confidence').value = '6';
+  document.getElementById('confidence-display').textContent = '6';
+  document.getElementById('form-category').value = 'feature';
+  document.getElementById('form-status').value = 'decided';
+  document.getElementById('form-alternatives').innerHTML = '';
+  document.getElementById('form-assumptions').innerHTML = '';
+
+  // Default review date: 30 days from now
+  const future = new Date();
+  future.setDate(future.getDate() + 30);
+  document.getElementById('form-review-date').value = future.toISOString().split('T')[0];
+
+  if (editId) {
+    const data = loadData();
+    const dec = data.find(d => d.id === editId);
+    if (dec) {
+      document.getElementById('form-id').value = dec.id;
+      document.getElementById('form-decision').value = dec.decision || '';
+      document.getElementById('form-context').value = dec.context || '';
+      document.getElementById('form-rationale').value = dec.rationale || '';
+      document.getElementById('form-expected').value = dec.expectedOutcome || '';
+      document.getElementById('form-confidence').value = dec.confidence || 6;
+      document.getElementById('confidence-display').textContent = dec.confidence || 6;
+      document.getElementById('form-category').value = dec.category || 'feature';
+      document.getElementById('form-status').value = dec.status || 'decided';
+      document.getElementById('form-review-date').value = dec.reviewDate ? dec.reviewDate.split('T')[0] : '';
+      renderDynamicItems('form-alternatives', dec.alternatives || []);
+      renderDynamicItems('form-assumptions', dec.keyAssumptions || []);
+    }
+  }
+
+  modal.style.display = 'flex';
+}
+
+function openReviewModal(decisionId) {
+  const data = loadData();
+  const dec = data.find(d => d.id === decisionId);
+  if (!dec) return;
+
+  document.getElementById('review-id').value = dec.id;
+  document.getElementById('review-actual').value = dec.actualOutcome || '';
+  document.getElementById('review-verdict').value = dec.verdict || 'right';
+  document.getElementById('review-bias').value = dec.biasAnalysis || '';
+  document.getElementById('review-lesson').value = dec.lesson || '';
+
+  document.getElementById('review-original').innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">📌 原始决策</div>
+    <div style="margin-bottom:4px;"><strong>决策：</strong>${escapeHtml(dec.decision)}</div>
+    <div style="margin-bottom:4px;"><strong>预期结果：</strong>${escapeHtml(dec.expectedOutcome || '')}</div>
+    <div><strong>置信度：</strong>${dec.confidence}/10</div>
+  `;
+
+  document.getElementById('modal-review').style.display = 'flex';
+}
+
+function saveDecision() {
+  const id = document.getElementById('form-id').value || generateId();
+  const decision = document.getElementById('form-decision').value.trim();
+  const context = document.getElementById('form-context').value.trim();
+  const expectedOutcome = document.getElementById('form-expected').value.trim();
+  const reviewDate = document.getElementById('form-review-date').value;
+
+  if (!decision || !context || !expectedOutcome) {
+    showToast('请填写决策内容、背景和预期结果', 'error');
+    return;
+  }
+
+  const data = loadData();
+  const existingIndex = data.findIndex(d => d.id === id);
+
+  const alternatives = getDynamicItems('form-alternatives');
+  const keyAssumptions = getDynamicItems('form-assumptions');
+
+  const entry = {
+    id,
+    decision,
+    context,
+    alternatives,
+    rationale: document.getElementById('form-rationale').value.trim(),
+    keyAssumptions,
+    expectedOutcome,
+    confidence: parseInt(document.getElementById('form-confidence').value),
+    category: document.getElementById('form-category').value,
+    status: document.getElementById('form-status').value,
+    reviewDate: reviewDate ? new Date(reviewDate).toISOString() : null,
+    createdAt: existingIndex >= 0 ? data[existingIndex].createdAt : new Date().toISOString(),
+    actualOutcome: existingIndex >= 0 ? data[existingIndex].actualOutcome : null,
+    verdict: existingIndex >= 0 ? data[existingIndex].verdict : null,
+    biasAnalysis: existingIndex >= 0 ? data[existingIndex].biasAnalysis : null,
+    lesson: existingIndex >= 0 ? data[existingIndex].lesson : null,
+    reviewedAt: existingIndex >= 0 ? data[existingIndex].reviewedAt : null,
+  };
+
+  if (existingIndex >= 0) {
+    data[existingIndex] = entry;
+  } else {
+    data.unshift(entry);
+  }
+
+  saveData(data);
+  closeModal('modal-form');
+  showToast(existingIndex >= 0 ? '决策已更新 ✓' : '决策已记录 ✓');
+
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'decisions') renderDecisions();
+  if (currentView === 'analytics') renderAnalytics();
+}
+
+function saveReview() {
+  const id = document.getElementById('review-id').value;
+  const data = loadData();
+  const dec = data.find(d => d.id === id);
+  if (!dec) return;
+
+  dec.actualOutcome = document.getElementById('review-actual').value.trim();
+  dec.verdict = document.getElementById('review-verdict').value;
+  dec.biasAnalysis = document.getElementById('review-bias').value.trim();
+  dec.lesson = document.getElementById('review-lesson').value.trim();
+  dec.reviewedAt = new Date().toISOString();
+
+  if (!dec.actualOutcome) {
+    showToast('请填写实际结果', 'error');
+    return;
+  }
+
+  saveData(data);
+  closeModal('modal-review');
+  showToast('回顾已保存 ✓ 判断力 +1');
+
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'decisions') renderDecisions();
+  if (currentView === 'analytics') renderAnalytics();
+}
+
+/* ========================================
+   Dynamic List Helpers
+   ======================================== */
+function addDynamicItem(containerId, value = '') {
+  const container = document.getElementById(containerId);
+  const idx = container.children.length;
+  const div = document.createElement('div');
+  div.className = 'dynamic-list-item';
+  div.innerHTML = `
+    <input type="text" class="form-input" value="${escapeHtml(value)}" placeholder="${containerId === 'form-alternatives' ? '方案 ' + (idx + 1) : '假设 ' + (idx + 1)}">
+    <button class="btn-icon-remove" onclick="this.parentElement.remove()">−</button>
+  `;
+  container.appendChild(div);
+}
+
+function renderDynamicItems(containerId, items) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  items.forEach(item => addDynamicItem(containerId, item));
+}
+
+function getDynamicItems(containerId) {
+  const inputs = document.querySelectorAll(`#${containerId} .dynamic-list-item input`);
+  return Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+}
+
+/* ========================================
+   Dashboard
+   ======================================== */
+function renderDashboard() {
+  const data = loadData();
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+
+  // Stats
+  const total = data.length;
+  const pendingReview = data.filter(d => !d.verdict || d.verdict === 'tbd').length;
+  const reviewed = data.filter(d => d.verdict && d.verdict !== 'tbd');
+  const rightCount = reviewed.filter(d => d.verdict === 'right').length;
+  const accuracy = reviewed.length > 0 ? Math.round((rightCount / reviewed.length) * 100) + '%' : '--';
+  const monthCount = data.filter(d => {
+    const dDate = new Date(d.createdAt);
+    return dDate.getMonth() === thisMonth && dDate.getFullYear() === thisYear;
+  }).length;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-pending').textContent = pendingReview;
+  document.getElementById('stat-accuracy').textContent = accuracy;
+  document.getElementById('stat-month').textContent = monthCount;
+
+  // Pending reviews
+  const pending = data.filter(d => !d.verdict || d.verdict === 'tbd').sort((a, b) => {
+    if (!a.reviewDate) return 1;
+    if (!b.reviewDate) return -1;
+    return new Date(a.reviewDate) - new Date(b.reviewDate);
+  }).slice(0, 5);
+
+  const pendingEl = document.getElementById('dash-pending');
+  if (pending.length === 0) {
+    pendingEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🎉</div><p class="empty-title">没有待回顾的决策</p><p>做完决定后记得回来填写结果</p></div>`;
+  } else {
+    pendingEl.innerHTML = pending.map(d => `
+      <div class="decision-mini-item" onclick="openReviewModal('${d.id}')">
+        <div class="dmi-top">
+          <span class="dmi-title">${escapeHtml(d.decision)}</span>
+          <span class="badge badge-tbd">待回顾</span>
+        </div>
+        <div class="dmi-meta">
+          <span>📅 ${formatDate(d.createdAt)}</span>
+          ${d.reviewDate ? `<span>⏰ 回顾日: ${formatDate(d.reviewDate)}</span>` : ''}
+          <span>🎯 置信度 ${d.confidence}/10</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Recent decisions
+  const recent = data.slice(0, 5);
+  const recentEl = document.getElementById('dash-recent');
+  if (recent.length === 0) {
+    recentEl.innerHTML = `<div class="empty-state"><div class="empty-icon">📝</div><p class="empty-title">还没有记录任何决策</p><p>点击右上角"新决策"开始记录</p></div>`;
+  } else {
+    recentEl.innerHTML = recent.map(d => {
+      const verdictBadge = d.verdict && d.verdict !== 'tbd'
+        ? `<span class="badge badge-${d.verdict}">${verdictLabel(d.verdict)}</span>`
+        : '';
+      return `
+        <div class="decision-mini-item" onclick="openDecisionDetail('${d.id}')">
+          <div class="dmi-top">
+            <span class="dmi-title">${escapeHtml(d.decision)}</span>
+            ${verdictBadge}
+          </div>
+          <div class="dmi-meta">
+            <span>📅 ${formatDate(d.createdAt)}</span>
+            <span>🏷️ ${CATEGORIES[d.category] || d.category}</span>
+            <span>🎯 ${d.confidence}/10</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function openDecisionDetail(id) {
+  switchView('decisions');
+  // Find and expand the card
+  setTimeout(() => {
+    expandedCardId = id;
+    renderDecisions();
+    const card = document.getElementById('card-' + id);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+}
+
+/* ========================================
+   Decisions List
+   ======================================== */
+function renderDecisions() {
+  const data = loadData();
+  const searchTerm = document.getElementById('search-input').value.toLowerCase();
+  const filterStatus = document.getElementById('filter-status').value;
+  const filterVerdict = document.getElementById('filter-verdict').value;
+  const filterCategory = document.getElementById('filter-category').value;
+
+  let filtered = data;
+
+  if (searchTerm) {
+    filtered = filtered.filter(d =>
+      d.decision.toLowerCase().includes(searchTerm) ||
+      (d.context && d.context.toLowerCase().includes(searchTerm)) ||
+      (d.expectedOutcome && d.expectedOutcome.toLowerCase().includes(searchTerm)) ||
+      (d.lesson && d.lesson.toLowerCase().includes(searchTerm))
+    );
+  }
+
+  if (filterStatus !== 'all') {
+    filtered = filtered.filter(d => d.status === filterStatus);
+  }
+
+  if (filterVerdict !== 'all') {
+    if (filterVerdict === 'tbd') {
+      filtered = filtered.filter(d => !d.verdict || d.verdict === 'tbd');
+    } else {
+      filtered = filtered.filter(d => d.verdict === filterVerdict);
+    }
+  }
+
+  if (filterCategory !== 'all') {
+    filtered = filtered.filter(d => d.category === filterCategory);
+  }
+
+  document.getElementById('decision-count').textContent = `共 ${filtered.length} 条决策`;
+
+  const listEl = document.getElementById('decisions-list');
+  if (filtered.length === 0) {
+    listEl.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p class="empty-title">没有匹配的决策</p><p>调整筛选条件试试</p></div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(d => {
+    const isExpanded = expandedCardId === d.id;
+    const verdictBadge = d.verdict && d.verdict !== 'tbd'
+      ? `<span class="badge badge-${d.verdict}">${verdictLabel(d.verdict)}</span>`
+      : '';
+    const statusBadge = d.status === 'implemented'
+      ? '<span class="badge badge-implemented">已执行</span>'
+      : d.status === 'superseded'
+        ? '<span class="badge badge-superseded">已废弃</span>'
+        : '<span class="badge badge-decided">已决策</span>';
+    const reviewedTag = d.reviewedAt
+      ? `<span>📝 已回顾: ${formatDate(d.reviewedAt)}</span>`
+      : `<span style="color:var(--warning)">⏰ ${d.reviewDate ? '预计回顾: ' + formatDate(d.reviewDate) : '待回顾'}</span>`;
+
+    return `
+    <div class="decision-card ${isExpanded ? 'expanded' : ''}" id="card-${d.id}">
+      <div class="dc-header" onclick="toggleCard('${d.id}')">
+        <div class="dc-title">${escapeHtml(d.decision)}</div>
+        <div class="dc-badges">${verdictBadge}${statusBadge}</div>
+      </div>
+      <div class="dc-meta" onclick="toggleCard('${d.id}')">
+        <span>📅 ${formatDate(d.createdAt)}</span>
+        <span>🏷️ ${CATEGORIES[d.category] || d.category}</span>
+        <span>🎯 置信度 ${d.confidence}/10</span>
+        ${reviewedTag}
+      </div>
+      <div class="dc-expanded">
+        ${d.context ? `
+          <div class="dc-section">
+            <div class="dc-section-label">背景 / 约束</div>
+            <div class="dc-section-content">${escapeHtml(d.context)}</div>
+          </div>
+        ` : ''}
+        ${d.alternatives && d.alternatives.length > 0 ? `
+          <div class="dc-section">
+            <div class="dc-section-label">替代方案</div>
+            <div class="dc-tags">${d.alternatives.map(a => `<span class="dc-tag">${escapeHtml(a)}</span>`).join('')}</div>
+          </div>
+        ` : ''}
+        ${d.rationale ? `
+          <div class="dc-section">
+            <div class="dc-section-label">选择理由</div>
+            <div class="dc-section-content">${escapeHtml(d.rationale)}</div>
+          </div>
+        ` : ''}
+        ${d.keyAssumptions && d.keyAssumptions.length > 0 ? `
+          <div class="dc-section">
+            <div class="dc-section-label">关键假设</div>
+            <div class="dc-tags">${d.keyAssumptions.map(a => `<span class="dc-tag">⚠️ ${escapeHtml(a)}</span>`).join('')}</div>
+          </div>
+        ` : ''}
+        ${d.expectedOutcome ? `
+          <div class="dc-section">
+            <div class="dc-section-label">预期结果</div>
+            <div class="dc-section-content">🎯 ${escapeHtml(d.expectedOutcome)}</div>
+          </div>
+        ` : ''}
+        ${d.verdict && d.verdict !== 'tbd' ? `
+          <div class="review-block ${d.verdict}">
+            <div class="review-header">📝 回顾结果：${verdictLabel(d.verdict)}</div>
+            ${d.actualOutcome ? `<div style="font-size:.85rem;margin-bottom:6px;"><strong>实际结果：</strong>${escapeHtml(d.actualOutcome)}</div>` : ''}
+            ${d.biasAnalysis ? `<div style="font-size:.85rem;margin-bottom:6px;"><strong>偏差分析：</strong>${escapeHtml(d.biasAnalysis)}</div>` : ''}
+            ${d.lesson ? `<div style="font-size:.85rem;"><strong>💡 教训：</strong>${escapeHtml(d.lesson)}</div>` : ''}
+          </div>
+        ` : ''}
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          ${!d.verdict || d.verdict === 'tbd' ? `
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();openReviewModal('${d.id}')">🔍 回顾</button>
+          ` : ''}
+          <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openDecisionForm('${d.id}')">✏️ 编辑</button>
+          <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();deleteDecision('${d.id}')">🗑 删除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(id) {
+  expandedCardId = expandedCardId === id ? null : id;
+  renderDecisions();
+}
+
+function deleteDecision(id) {
+  if (!confirm('确定要删除这条决策吗？此操作不可撤销。')) return;
+  const data = loadData();
+  saveData(data.filter(d => d.id !== id));
+  if (expandedCardId === id) expandedCardId = null;
+  showToast('决策已删除');
+  renderDecisions();
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'analytics') renderAnalytics();
+}
+
+/* ========================================
+   Analytics
+   ======================================== */
+function renderAnalytics() {
+  const data = loadData();
+  if (data.length === 0) {
+    document.getElementById('chart-verdict').innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><p class="empty-title">还没有数据</p></div>`;
+    document.getElementById('chart-calibration').innerHTML = '';
+    document.getElementById('chart-category').innerHTML = '';
+    document.getElementById('chart-monthly').innerHTML = '';
+    document.getElementById('chart-biases').innerHTML = '';
+    return;
+  }
+
+  // Verdict distribution
+  const reviewed = data.filter(d => d.verdict && d.verdict !== 'tbd');
+  const verdicts = { right: 0, partial: 0, wrong: 0, tbd: data.filter(d => !d.verdict || d.verdict === 'tbd').length };
+  reviewed.forEach(d => { verdicts[d.verdict] = (verdicts[d.verdict] || 0) + 1; });
+  const maxV = Math.max(...Object.values(verdicts), 1);
+
+  document.getElementById('chart-verdict').innerHTML = `
+    ${renderBar('✅ 正确', verdicts.right, maxV, 'var(--success)')}
+    ${renderBar('⚠️ 部分正确', verdicts.partial, maxV, 'var(--warning)')}
+    ${renderBar('❌ 错误', verdicts.wrong, maxV, 'var(--danger)')}
+    ${renderBar('⏳ 待回顾', verdicts.tbd, maxV, 'var(--text-muted)')}
+    ${reviewed.length > 0 ? `<div style="margin-top:10px;font-size:.85rem;color:var(--text-secondary);">已回顾 ${reviewed.length} 条，准确率 ${Math.round((verdicts.right / reviewed.length) * 100)}%</div>` : ''}
+  `;
+
+  // Confidence calibration
+  const buckets = [
+    { range: '1-3 (低)', min: 1, max: 3 },
+    { range: '4-6 (中)', min: 4, max: 6 },
+    { range: '7-8 (高)', min: 7, max: 8 },
+    { range: '9-10 (极高)', min: 9, max: 10 },
+  ];
+  let calibHtml = '<table class="calib-table"><thead><tr><th>置信度区间</th><th>决策数</th><th>准确率</th></tr></thead><tbody>';
+  buckets.forEach(b => {
+    const inBucket = reviewed.filter(d => d.confidence >= b.min && d.confidence <= b.max);
+    const correct = inBucket.filter(d => d.verdict === 'right').length;
+    const rate = inBucket.length > 0 ? Math.round((correct / inBucket.length) * 100) : 0;
+    calibHtml += `<tr>
+      <td>${b.range}</td>
+      <td>${inBucket.length}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="bar-mini" style="flex:1"><div class="bar-mini-fill" style="width:${rate}%;background:${rate >= 70 ? 'var(--success)' : rate >= 40 ? 'var(--warning)' : 'var(--danger)'}"></div></div>
+          <span style="font-size:.8rem;font-weight:600;min-width:36px;">${rate}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  calibHtml += '</tbody></table>';
+  if (reviewed.length > 0) {
+    calibHtml += `<div style="margin-top:10px;font-size:.8rem;color:var(--text-secondary);">💡 理想校准：置信度越高，准确率应该越高。如果 9-10 分区间准确率低于 80%，说明你可能过度自信。</div>`;
+  }
+  document.getElementById('chart-calibration').innerHTML = calibHtml;
+
+  // Accuracy by category
+  const catAcc = {};
+  reviewed.forEach(d => {
+    if (!catAcc[d.category]) catAcc[d.category] = { total: 0, right: 0 };
+    catAcc[d.category].total++;
+    if (d.verdict === 'right') catAcc[d.category].right++;
+  });
+  const catEntries = Object.entries(catAcc).sort((a, b) => b[1].total - a[1].total);
+  const maxCat = Math.max(...catEntries.map(([, v]) => v.total), 1);
+  document.getElementById('chart-category').innerHTML = catEntries.length > 0
+    ? catEntries.map(([cat, v]) => {
+        const rate = Math.round((v.right / v.total) * 100);
+        return renderBar(`${CATEGORIES[cat] || cat}`, v.total, maxCat,
+          rate >= 70 ? 'var(--success)' : rate >= 40 ? 'var(--warning)' : 'var(--danger)',
+          `${v.right}/${v.total} 正确 (${rate}%)`);
+      }).join('')
+    : `<div class="empty-state"><p>暂无分类数据</p></div>`;
+
+  // Monthly volume
+  const monthly = {};
+  data.forEach(d => {
+    const key = d.createdAt.substring(0, 7);
+    monthly[key] = (monthly[key] || 0) + 1;
+  });
+  const months = Object.keys(monthly).sort();
+  const maxMon = Math.max(...Object.values(monthly), 1);
+  document.getElementById('chart-monthly').innerHTML = months.length > 0
+    ? months.slice(-12).map(m => renderBar(m, monthly[m], maxMon, 'var(--primary)')).join('')
+    : `<div class="empty-state"><p>暂无数据</p></div>`;
+
+  // Common biases
+  const biases = {};
+  reviewed.filter(d => d.biasAnalysis).forEach(d => {
+    const words = d.biasAnalysis.toLowerCase();
+    if (words.includes('假设') || words.includes('assum')) biases['假设错误'] = (biases['假设错误'] || 0) + 1;
+    if (words.includes('数据') || words.includes('data')) biases['数据误读'] = (biases['数据误读'] || 0) + 1;
+    if (words.includes('执行') || words.includes('execution')) biases['执行偏差'] = (biases['执行偏差'] || 0) + 1;
+    if (words.includes('乐观') || words.includes('optimis')) biases['过度乐观'] = (biases['过度乐观'] || 0) + 1;
+    if (words.includes('用户') || words.includes('user')) biases['用户理解偏差'] = (biases['用户理解偏差'] || 0) + 1;
+    if (words.includes('竞品') || words.includes('competitor')) biases['竞品误判'] = (biases['竞品误判'] || 0) + 1;
+    if (Object.keys(biases).length === 0) biases['其他'] = (biases['其他'] || 0) + 1;
+  });
+  document.getElementById('chart-biases').innerHTML = Object.keys(biases).length > 0
+    ? Object.entries(biases).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+        `<span class="bias-tag">${k} (${v}次)</span>`
+      ).join(' ')
+    : `<div style="font-size:.85rem;color:var(--text-secondary);">回顾时填写"偏差分析"，这里会自动统计你的常见判断偏差模式</div>`;
+}
+
+function renderBar(label, value, max, color, suffix = '') {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return `
+    <div class="bar-row">
+      <div class="bar-label">${label}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width:${pct}%;background:${color}">
+          <span class="bar-fill-text">${value}${suffix ? ' ' + suffix : ''}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ========================================
+   Data Management
+   ======================================== */
+function exportData() {
+  const data = loadData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `decision-journal-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('数据已导出 ✓');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('格式错误');
+      const existing = loadData();
+      const existingIds = new Set(existing.map(d => d.id));
+      const newItems = imported.filter(d => !existingIds.has(d.id));
+      const merged = [...existing, ...newItems];
+      saveData(merged);
+      showToast(`导入成功：新增 ${newItems.length} 条，跳过 ${imported.length - newItems.length} 条重复 ✓`);
+      if (currentView === 'dashboard') renderDashboard();
+      if (currentView === 'decisions') renderDecisions();
+      if (currentView === 'analytics') renderAnalytics();
+    } catch (err) {
+      showToast('文件格式错误，请检查', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function clearAllData() {
+  if (!confirm('⚠️ 确定要删除所有决策记录吗？\n\n此操作不可撤销。建议先导出备份。')) return;
+  if (!confirm('再次确认：删除全部 ' + loadData().length + ' 条决策记录？')) return;
+  saveData([]);
+  expandedCardId = null;
+  showToast('所有数据已清除');
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'decisions') renderDecisions();
+  if (currentView === 'analytics') renderAnalytics();
+}
+
+function loadDemoData() {
+  const existing = loadData();
+  if (existing.length > 0 && !confirm('加载示例数据不会覆盖你的已有数据，但可能产生重复。继续？')) return;
+
+  const now = new Date();
+  const daysAgo = (d) => new Date(now - d * 86400000).toISOString();
+  const monthsAgo = (m) => new Date(now - m * 30 * 86400000).toISOString();
+
+  const demos = [
+    {
+      id: 'demo_1', decision: '将 paywall 从第 5 次启动提前到第 3 次启动', context: '免费用户体验周期过长，付费转化率 1.8%，行业基准是 3-5%。担心提前 paywall 会影响留存。', alternatives: ['保持在第 5 次启动', '第 1 次启动就弹 paywall', '按使用次数动态调整'], rationale: '第 3 次是用户已经体验核心价值但还没形成免费依赖的时间点，平衡转化和留存。', keyAssumptions: ['用户在第 3 次启动时已经体验过核心功能', '提前 paywall 不会导致 Day 7 留存下降超过 5%'], expectedOutcome: '付费转化率从 1.8% 提升到 3.5% 以上，Day 7 留存跌幅不超过 3 个百分点', confidence: 7, category: 'monetization', status: 'implemented', reviewDate: daysAgo(30), createdAt: monthsAgo(2),
+      actualOutcome: '付费转化率提升到 3.8%，但 Day 7 留存从 22% 下降到 17%（跌了 5 个百分点，超出预期）。整体 Blended ARPU 上升了 12%。', verdict: 'partial', biasAnalysis: '方向对但低估了 paywall 对留存的冲击。假设"第 3 次用户已经体验过核心价值"不成立——数据显示只有 40% 的用户在第 3 次启动前完成了核心操作。', lesson: '做 paywall 时间点调整前，先验证用户行为漏斗——看多少用户在目标节点前已经完成了第一次"啊哈时刻"，而不是拍一个次数。', reviewedAt: daysAgo(5)
+    },
+    {
+      id: 'demo_2', decision: '在 onboarding 中增加 3 步兴趣选择流程', context: '新用户注册后内容推荐不精准，导致首日留存只有 24%。竞品有类似流程。', alternatives: ['保持现有流程，优化推荐算法', '让用户直接搜索而非选择兴趣', '减少到 1 步快速选择'], rationale: '3 步能收集足够信号又不至于太长，太多步骤会导致 onboarding 流失。', keyAssumptions: ['用户愿意花 30 秒完成选择', '收集的兴趣标签能显著提升推荐准确率'], expectedOutcome: 'Day 1 留存从 24% 提升到 32% 以上，onboarding 完成率保持在 70% 以上', confidence: 8, category: 'onboarding', status: 'implemented', reviewDate: daysAgo(60), createdAt: monthsAgo(3),
+      actualOutcome: 'Day 1 留存反而下降到 21%，onboarding 完成率只有 52%。用户在选择流程中大量流失。', verdict: 'wrong', biasAnalysis: '竞品分析时只看了"竞品有这个功能"，没看竞品的用户结构和获客渠道差异。竞品主要靠搜索获客，用户意图强；我们靠社交推荐获客，用户意图弱，对额外步骤的容忍度完全不同。', lesson: '永远不要因为"竞品做了"就做。要先问：竞品的用户和我们一样吗？获客渠道一样吗？用户打开 app 时的意图强度一样吗？三个不一样，就不要跟。', reviewedAt: daysAgo(45)
+    },
+    {
+      id: 'demo_3', decision: '针对东南亚市场推出广告变现为主、订阅为辅的混合变现模式', context: '印尼和菲律宾用户付费意愿低，付费转化率只有 0.3%，但 DAU 增长快。纯订阅模型在这些市场无法盈利。', alternatives: ['坚持纯订阅，只做高价值市场', '完全免费 + 广告', '只推年订阅不推月订阅'], rationale: '东南亚用户对广告容忍度高、eCPM 虽然低但 DAU 基数大能跑量。保留订阅选项捕获高价值用户。', keyAssumptions: ['东南亚 DAU 能持续增长到 10 万以上', '广告体验不会导致用户大规模流失', '当地 eCPM 能维持在 $0.5 以上'], expectedOutcome: '东南亚市场 Blended ARPU 从 $0.02 提升到 $0.08，DAU 增长的同时不出现大规模流失', confidence: 6, category: 'monetization', status: 'implemented', reviewDate: daysAgo(15), createdAt: monthsAgo(1.5),
+      actualOutcome: 'Blended ARPU 提升到 $0.11，超出预期。但出现了一个意外：部分付费用户因为看到广告而降级到免费版。广告 cannibalization 率约 8%。', verdict: 'partial', biasAnalysis: '建模时只考虑了免费用户的广告收入和新增付费用户，没有考虑"已有付费用户因为看到广告而取消订阅"的场景。混合变现的关键风险不是收入加不起来，而是两个收入流互相侵蚀。', lesson: '设计混合变现时，必须给付费用户默认去掉广告（或至少大幅减少），否则订阅和广告会互相伤害。同时要监控 cannibalization rate。', reviewedAt: daysAgo(3)
+    },
+    {
+      id: 'demo_4', decision: '将用户反馈处理的响应时间从 48 小时压缩到 12 小时', context: 'Google Play 评分从 4.3 降到 4.0，差评里大量提到"客服不回复"。团队只有 1 个运营兼职处理反馈。', alternatives: ['增加客服人员到 3 人', '用 AI 自动回复', '优先回复差评用户，好评不回复'], rationale: '12 小时内回复是最低成本改善评分的方式，先用 1 个人验证，不够再加人。', keyAssumptions: ['响应速度是评分下降的主要原因', '1 个人能在 12 小时内处理完当前的反馈量', '回复后用户会修改评分'], expectedOutcome: 'Google Play 评分在 4 周内回升到 4.2 以上，差评中"客服不回复"的比例下降 60%', confidence: 5, category: 'retention', status: 'decided', reviewDate: new Date(now.getTime() + 14 * 86400000).toISOString(), createdAt: monthsAgo(0.3),
+      actualOutcome: null, verdict: null, biasAnalysis: null, lesson: null, reviewedAt: null
+    },
+  ];
+
+  const merged = [...existing];
+  demos.forEach(d => {
+    if (!merged.find(m => m.id === d.id)) merged.unshift(d);
+  });
+  saveData(merged);
+  showToast('示例数据已加载 ✓ 共 4 条（2 条已回顾 + 1 条待回顾 + 1 条新增）');
+  if (currentView === 'dashboard') renderDashboard();
+  if (currentView === 'decisions') renderDecisions();
+  if (currentView === 'analytics') renderAnalytics();
+}
+
+/* ========================================
+   Helpers
+   ======================================== */
+function formatDate(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function verdictLabel(v) {
+  const map = { right: '✅ 正确', partial: '⚠️ 部分正确', wrong: '❌ 错误', tbd: '待回顾' };
+  return map[v] || v;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ========================================
+   Keyboard shortcuts
+   ======================================== */
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+    e.preventDefault();
+    openDecisionForm();
+  }
+  if (e.key === 'Escape') {
+    closeModal('modal-form');
+    closeModal('modal-review');
+  }
+});
+
+/* ========================================
+   Init
+   ======================================== */
+renderDashboard();
+</script>
+</body>
+</html>
