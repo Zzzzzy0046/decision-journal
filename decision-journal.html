@@ -224,6 +224,9 @@ body {
 .badge-partial { background: var(--warning-light); color: var(--warning); }
 .badge-wrong { background: var(--danger-light); color: var(--danger); }
 .badge-tbd { background: var(--bg); color: var(--text-muted); }
+.badge-cost-high { background: var(--danger-light); color: var(--danger); }
+.badge-cost-medium { background: var(--warning-light); color: var(--warning); }
+.badge-cost-low { background: var(--bg); color: var(--text-muted); }
 .dc-meta { font-size: .78rem; color: var(--text-muted); margin-top: 6px; display: flex; gap: 16px; flex-wrap: wrap; }
 .dc-expanded { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: none; }
 .decision-card.expanded .dc-expanded { display: block; }
@@ -445,6 +448,16 @@ body {
 
     <!-- ============ DASHBOARD VIEW ============ -->
     <div id="view-dashboard" class="view active">
+      <div id="dash-review-alert" style="display:none;background:var(--warning-light);border:1px solid var(--warning);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.5rem;">⏰</span>
+          <div>
+            <div style="font-weight:700;font-size:.9rem;">今天有 <span id="alert-count">0</span> 条决策该回顾了</div>
+            <div style="font-size:.78rem;color:var(--text-secondary);">回顾是判断力积累的关键一步</div>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="switchView('decisions');document.getElementById('filter-verdict').value='tbd';renderDecisions();">去看看 →</button>
+      </div>
       <div class="stats-grid">
         <div class="stat-card accent-blue">
           <div class="stat-icon">📝</div><div class="stat-value" id="stat-total">0</div><div class="stat-label">总决策数</div>
@@ -529,6 +542,10 @@ body {
         <div class="analytics-card">
           <div class="analytics-card-title">📅 月度决策量</div>
           <div class="chart-container" id="chart-monthly"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-card-title">📈 月度准确率趋势</div>
+          <div class="chart-container" id="chart-accuracy-trend"></div>
         </div>
         <div class="analytics-card full-width">
           <div class="analytics-card-title">🔍 常见偏差模式</div>
@@ -662,6 +679,15 @@ body {
         <div class="form-group">
           <label class="form-label">回顾日期</label>
           <input type="date" class="form-input" id="form-review-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">错误代价</label>
+          <select class="form-select" id="form-cost">
+            <option value="medium">中 — 错了有损失但可修复</option>
+            <option value="high">高 — 错了代价很大，难以回头</option>
+            <option value="low">低 — 错了影响不大，容易调整</option>
+          </select>
+          <div class="form-hint">这个决定如果错了，代价有多大？</div>
         </div>
       </div>
     </div>
@@ -806,6 +832,7 @@ function openDecisionForm(editId = null) {
   document.getElementById('confidence-display').textContent = '6';
   document.getElementById('form-category').value = 'feature';
   document.getElementById('form-status').value = 'decided';
+  document.getElementById('form-cost').value = 'medium';
   document.getElementById('form-alternatives').innerHTML = '';
   document.getElementById('form-assumptions').innerHTML = '';
 
@@ -827,6 +854,7 @@ function openDecisionForm(editId = null) {
       document.getElementById('confidence-display').textContent = dec.confidence || 6;
       document.getElementById('form-category').value = dec.category || 'feature';
       document.getElementById('form-status').value = dec.status || 'decided';
+      document.getElementById('form-cost').value = dec.costOfError || 'medium';
       document.getElementById('form-review-date').value = dec.reviewDate ? dec.reviewDate.split('T')[0] : '';
       renderDynamicItems('form-alternatives', dec.alternatives || []);
       renderDynamicItems('form-assumptions', dec.keyAssumptions || []);
@@ -885,6 +913,7 @@ function saveDecision() {
     expectedOutcome,
     confidence: parseInt(document.getElementById('form-confidence').value),
     category: document.getElementById('form-category').value,
+    costOfError: document.getElementById('form-cost').value,
     status: document.getElementById('form-status').value,
     reviewDate: reviewDate ? new Date(reviewDate).toISOString() : null,
     createdAt: existingIndex >= 0 ? data[existingIndex].createdAt : new Date().toISOString(),
@@ -987,6 +1016,21 @@ function renderDashboard() {
   document.getElementById('stat-accuracy').textContent = accuracy;
   document.getElementById('stat-month').textContent = monthCount;
 
+  // Review alert for today
+  const today = new Date().toISOString().split('T')[0];
+  const dueToday = data.filter(d => {
+    if (!d.reviewDate) return false;
+    if (d.verdict && d.verdict !== 'tbd') return false;
+    return d.reviewDate.split('T')[0] === today;
+  });
+  const alertEl = document.getElementById('dash-review-alert');
+  if (dueToday.length > 0) {
+    document.getElementById('alert-count').textContent = dueToday.length;
+    alertEl.style.display = 'flex';
+  } else {
+    alertEl.style.display = 'none';
+  }
+
   // Pending reviews
   const pending = data.filter(d => !d.verdict || d.verdict === 'tbd').sort((a, b) => {
     if (!a.reviewDate) return 1;
@@ -1033,6 +1077,7 @@ function renderDashboard() {
             <span>📅 ${formatDate(d.createdAt)}</span>
             <span>🏷️ ${CATEGORIES[d.category] || d.category}</span>
             <span>🎯 ${d.confidence}/10</span>
+        ${d.costOfError === 'high' ? '<span style="font-size:.7rem;color:var(--danger);font-weight:600;">⚠️ 高代价</span>' : ''}
           </div>
         </div>
       `;
@@ -1276,6 +1321,23 @@ function renderAnalytics() {
     ? months.slice(-12).map(m => renderBar(m, monthly[m], maxMon, 'var(--primary)')).join('')
     : `<div class="empty-state"><p>暂无数据</p></div>`;
 
+  // Monthly accuracy trend
+  const monthlyAcc = {};
+  reviewed.forEach(d => {
+    const key = d.createdAt.substring(0, 7);
+    monthlyAcc[key] = monthlyAcc[key] || { total: 0, right: 0 };
+    monthlyAcc[key].total++;
+    if (d.verdict === 'right') monthlyAcc[key].right++;
+  });
+  const accMonths = Object.keys(monthlyAcc).sort().slice(-12);
+  document.getElementById('chart-accuracy-trend').innerHTML = accMonths.length > 0
+    ? accMonths.map(m => {
+        const rate = monthlyAcc[m].total > 0 ? Math.round((monthlyAcc[m].right / monthlyAcc[m].total) * 100) : 0;
+        const color = rate >= 60 ? 'var(--success)' : rate >= 30 ? 'var(--warning)' : 'var(--danger)';
+        return renderBar(m, rate, 100, color, rate + '% 正确');
+      }).join('')
+    : `<div class="empty-state"><p>回顾数据不足</p></div>`;
+
   // Common biases
   const biases = {};
   reviewed.filter(d => d.biasAnalysis).forEach(d => {
@@ -1369,19 +1431,19 @@ function loadDemoData() {
 
   const demos = [
     {
-      id: 'demo_1', decision: '将 paywall 从第 5 次启动提前到第 3 次启动', context: '免费用户体验周期过长，付费转化率 1.8%，行业基准是 3-5%。担心提前 paywall 会影响留存。', alternatives: ['保持在第 5 次启动', '第 1 次启动就弹 paywall', '按使用次数动态调整'], rationale: '第 3 次是用户已经体验核心价值但还没形成免费依赖的时间点，平衡转化和留存。', keyAssumptions: ['用户在第 3 次启动时已经体验过核心功能', '提前 paywall 不会导致 Day 7 留存下降超过 5%'], expectedOutcome: '付费转化率从 1.8% 提升到 3.5% 以上，Day 7 留存跌幅不超过 3 个百分点', confidence: 7, category: 'monetization', status: 'implemented', reviewDate: daysAgo(30), createdAt: monthsAgo(2),
+      id: 'demo_1', decision: '将 paywall 从第 5 次启动提前到第 3 次启动', context: '免费用户体验周期过长，付费转化率 1.8%，行业基准是 3-5%。担心提前 paywall 会影响留存。', alternatives: ['保持在第 5 次启动', '第 1 次启动就弹 paywall', '按使用次数动态调整'], rationale: '第 3 次是用户已经体验核心价值但还没形成免费依赖的时间点，平衡转化和留存。', keyAssumptions: ['用户在第 3 次启动时已经体验过核心功能', '提前 paywall 不会导致 Day 7 留存下降超过 5%'], expectedOutcome: '付费转化率从 1.8% 提升到 3.5% 以上，Day 7 留存跌幅不超过 3 个百分点', confidence: 7, category: 'monetization', costOfError: 'high', status: 'implemented', reviewDate: daysAgo(30), createdAt: monthsAgo(2),
       actualOutcome: '付费转化率提升到 3.8%，但 Day 7 留存从 22% 下降到 17%（跌了 5 个百分点，超出预期）。整体 Blended ARPU 上升了 12%。', verdict: 'partial', biasAnalysis: '方向对但低估了 paywall 对留存的冲击。假设"第 3 次用户已经体验过核心价值"不成立——数据显示只有 40% 的用户在第 3 次启动前完成了核心操作。', lesson: '做 paywall 时间点调整前，先验证用户行为漏斗——看多少用户在目标节点前已经完成了第一次"啊哈时刻"，而不是拍一个次数。', reviewedAt: daysAgo(5)
     },
     {
-      id: 'demo_2', decision: '在 onboarding 中增加 3 步兴趣选择流程', context: '新用户注册后内容推荐不精准，导致首日留存只有 24%。竞品有类似流程。', alternatives: ['保持现有流程，优化推荐算法', '让用户直接搜索而非选择兴趣', '减少到 1 步快速选择'], rationale: '3 步能收集足够信号又不至于太长，太多步骤会导致 onboarding 流失。', keyAssumptions: ['用户愿意花 30 秒完成选择', '收集的兴趣标签能显著提升推荐准确率'], expectedOutcome: 'Day 1 留存从 24% 提升到 32% 以上，onboarding 完成率保持在 70% 以上', confidence: 8, category: 'onboarding', status: 'implemented', reviewDate: daysAgo(60), createdAt: monthsAgo(3),
+      id: 'demo_2', decision: '在 onboarding 中增加 3 步兴趣选择流程', context: '新用户注册后内容推荐不精准，导致首日留存只有 24%。竞品有类似流程。', alternatives: ['保持现有流程，优化推荐算法', '让用户直接搜索而非选择兴趣', '减少到 1 步快速选择'], rationale: '3 步能收集足够信号又不至于太长，太多步骤会导致 onboarding 流失。', keyAssumptions: ['用户愿意花 30 秒完成选择', '收集的兴趣标签能显著提升推荐准确率'], expectedOutcome: 'Day 1 留存从 24% 提升到 32% 以上，onboarding 完成率保持在 70% 以上', confidence: 8, category: 'onboarding', costOfError: 'high', status: 'implemented', reviewDate: daysAgo(60), createdAt: monthsAgo(3),
       actualOutcome: 'Day 1 留存反而下降到 21%，onboarding 完成率只有 52%。用户在选择流程中大量流失。', verdict: 'wrong', biasAnalysis: '竞品分析时只看了"竞品有这个功能"，没看竞品的用户结构和获客渠道差异。竞品主要靠搜索获客，用户意图强；我们靠社交推荐获客，用户意图弱，对额外步骤的容忍度完全不同。', lesson: '永远不要因为"竞品做了"就做。要先问：竞品的用户和我们一样吗？获客渠道一样吗？用户打开 app 时的意图强度一样吗？三个不一样，就不要跟。', reviewedAt: daysAgo(45)
     },
     {
-      id: 'demo_3', decision: '针对东南亚市场推出广告变现为主、订阅为辅的混合变现模式', context: '印尼和菲律宾用户付费意愿低，付费转化率只有 0.3%，但 DAU 增长快。纯订阅模型在这些市场无法盈利。', alternatives: ['坚持纯订阅，只做高价值市场', '完全免费 + 广告', '只推年订阅不推月订阅'], rationale: '东南亚用户对广告容忍度高、eCPM 虽然低但 DAU 基数大能跑量。保留订阅选项捕获高价值用户。', keyAssumptions: ['东南亚 DAU 能持续增长到 10 万以上', '广告体验不会导致用户大规模流失', '当地 eCPM 能维持在 $0.5 以上'], expectedOutcome: '东南亚市场 Blended ARPU 从 $0.02 提升到 $0.08，DAU 增长的同时不出现大规模流失', confidence: 6, category: 'monetization', status: 'implemented', reviewDate: daysAgo(15), createdAt: monthsAgo(1.5),
+      id: 'demo_3', decision: '针对东南亚市场推出广告变现为主、订阅为辅的混合变现模式', context: '印尼和菲律宾用户付费意愿低，付费转化率只有 0.3%，但 DAU 增长快。纯订阅模型在这些市场无法盈利。', alternatives: ['坚持纯订阅，只做高价值市场', '完全免费 + 广告', '只推年订阅不推月订阅'], rationale: '东南亚用户对广告容忍度高、eCPM 虽然低但 DAU 基数大能跑量。保留订阅选项捕获高价值用户。', keyAssumptions: ['东南亚 DAU 能持续增长到 10 万以上', '广告体验不会导致用户大规模流失', '当地 eCPM 能维持在 $0.5 以上'], expectedOutcome: '东南亚市场 Blended ARPU 从 $0.02 提升到 $0.08，DAU 增长的同时不出现大规模流失', confidence: 6, category: 'monetization', costOfError: 'medium', status: 'implemented', reviewDate: daysAgo(15), createdAt: monthsAgo(1.5),
       actualOutcome: 'Blended ARPU 提升到 $0.11，超出预期。但出现了一个意外：部分付费用户因为看到广告而降级到免费版。广告 cannibalization 率约 8%。', verdict: 'partial', biasAnalysis: '建模时只考虑了免费用户的广告收入和新增付费用户，没有考虑"已有付费用户因为看到广告而取消订阅"的场景。混合变现的关键风险不是收入加不起来，而是两个收入流互相侵蚀。', lesson: '设计混合变现时，必须给付费用户默认去掉广告（或至少大幅减少），否则订阅和广告会互相伤害。同时要监控 cannibalization rate。', reviewedAt: daysAgo(3)
     },
     {
-      id: 'demo_4', decision: '将用户反馈处理的响应时间从 48 小时压缩到 12 小时', context: 'Google Play 评分从 4.3 降到 4.0，差评里大量提到"客服不回复"。团队只有 1 个运营兼职处理反馈。', alternatives: ['增加客服人员到 3 人', '用 AI 自动回复', '优先回复差评用户，好评不回复'], rationale: '12 小时内回复是最低成本改善评分的方式，先用 1 个人验证，不够再加人。', keyAssumptions: ['响应速度是评分下降的主要原因', '1 个人能在 12 小时内处理完当前的反馈量', '回复后用户会修改评分'], expectedOutcome: 'Google Play 评分在 4 周内回升到 4.2 以上，差评中"客服不回复"的比例下降 60%', confidence: 5, category: 'retention', status: 'decided', reviewDate: new Date(now.getTime() + 14 * 86400000).toISOString(), createdAt: monthsAgo(0.3),
+      id: 'demo_4', decision: '将用户反馈处理的响应时间从 48 小时压缩到 12 小时', context: 'Google Play 评分从 4.3 降到 4.0，差评里大量提到"客服不回复"。团队只有 1 个运营兼职处理反馈。', alternatives: ['增加客服人员到 3 人', '用 AI 自动回复', '优先回复差评用户，好评不回复'], rationale: '12 小时内回复是最低成本改善评分的方式，先用 1 个人验证，不够再加人。', keyAssumptions: ['响应速度是评分下降的主要原因', '1 个人能在 12 小时内处理完当前的反馈量', '回复后用户会修改评分'], expectedOutcome: 'Google Play 评分在 4 周内回升到 4.2 以上，差评中"客服不回复"的比例下降 60%', confidence: 5, category: 'retention', costOfError: 'low', status: 'decided', reviewDate: new Date(now.getTime() + 14 * 86400000).toISOString(), createdAt: monthsAgo(0.3),
       actualOutcome: null, verdict: null, biasAnalysis: null, lesson: null, reviewedAt: null
     },
   ];
